@@ -45,34 +45,6 @@ def gen_os_path(data, sub_dir):
     else:
         return data + sub_dir + '/'
 
-# helper function to do texture extraction
-def lbp(im_path, images, numPoints = 8, radius = 2):    
-    
-    # create the feature array
-    texture = []
-
-    # iterate through the images and crop the face
-    for count, im_name in enumerate(images):
-        
-        image = cv.imread(im_path + im_name)
-        #print(im_path + im_name)
-        gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
-
-        # calcaluate the lbp feature
-        lbp = feature.local_binary_pattern(gray, numPoints, radius, method = "uniform")
-
-        # convert to histogram feature
-        (lbp_feature, _) = np.histogram(lbp.ravel(), bins=np.arange(0, numPoints + 3), 
-                             range=(0, numPoints + 2))
-
-        # normalize the histogram
-        lbp_feature = lbp_feature.astype("float")
-        lbp_feature /= (lbp_feature.sum() + 1e-7)
-        
-        texture.append(lbp_feature.tolist())
-    
-    return texture
-
 # helper function for multiprocessing
 def noise_helper(person_data, write_loc, camera_flag = True, environment_flag = True):
     
