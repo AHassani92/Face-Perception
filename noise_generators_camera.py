@@ -301,38 +301,3 @@ def over_expose(image, gamma = None, environment_flag = False):
             
     # return noise-augmented image
     return image_noise
-
-
-def image_write(noise_im, im_dir, im_name, noise, counter = -1):
-    """
-    The image_write function automates writing the noise-augmented image to an appropriate directory. 
-    
-    :param noise_im: the noise-augmented image
-    :type noise_im: numpy array
-    
-    :param im_dir: the path to the image write directory
-    :type im_dir: string
-    
-    :param im_name: the name of the image to be writteny
-    :type im_name: string
-    
-    :param noise: the noise augmentation function
-    :type noise: function pointer
-    
-    :param counter: a counter to append to the image for automation
-    :type counter: integer, optional
-    
-    :return: the noise-augmented image
-    :rtype: numpy array
-    """
-    
-    # convert image to PIL format
-    noise_im = Image.fromarray(noise_im)
-    
-    # if a counter is specified, format it accordingly
-    if counter >= 0: count = '_'+str(counter).zfill(4)
-    else: count = ''
-    
-    # generate the path and write the image to disk
-    write_path = im_dir + im_name + '_' + noise.__name__ + count + '.png'
-    noise_im.save(write_path)
