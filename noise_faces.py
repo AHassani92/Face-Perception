@@ -15,42 +15,101 @@ import cv2 as cv
 from PIL import Image, ImageOps
 
 # noise generators
-from noise_generators_camera import blur, gaussian, poisson, salt_and_pepper, under_expose, over_expose, noise_image_write
+from noise_generators_camera import blur, gaussian, poisson, salt_and_pepper, under_expose, over_expose
 from noise_generators_environment import point_source, point_shadow, streak_source, streak_shadow, pipe_source, pipe_shadow
 
 
+# argument parsing globals
 MODE = ['NOISE', 'RM']
 NOISE = ['ALL', 'CAM', 'ENV']
 
-# program input parser
+
+def image_write(noise_im, im_dir, im_name, noise, counter = -1):
+    """
+    The image_write function automates writing the noise-augmented image to an appropriate directory. 
+    
+    :param noise_im: the noise-augmented image
+    :type noise_im: numpy array
+    
+    :param im_dir: the path to the image write directory
+    :type im_dir: string
+    
+    :param im_name: the name of the image to be writteny
+    :type im_name: string
+    
+    :param noise: the noise augmentation function
+    :type noise: function pointer
+    
+    :param counter: a counter to append to the image for automation
+    :type counter: integer, optional
+    
+    :return: the noise-augmented image
+    :rtype: numpy array
+    """
+    
+    # convert image to PIL format
+    noise_im = Image.fromarray(noise_im)
+    
+    # if a counter is specified, format it accordingly
+    if counter >= 0: count = '_'+str(counter).zfill(4)
+    else: count = ''
+    
+    # generate the path and write the image to disk
+    write_path = im_dir + im_name + '_' + noise.__name__ + count + '.png'
+    noise_im.save(write_path)
+
+
 def parse_args():
+    
+    """
+    The parse_args function parses the program inputs. This determines whether to noise or remove images as well as what noise type.
+    
+    :return: the parsed program inputs
+    :rtype: dictionary
+    """
+    
+    # create the argument parser
     parser = argparse.ArgumentParser(
         description='Liveliness BJL Argument Parser',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
+        )
+    
+    # add argument for mode
     parser.add_argument('-m', '--mode', type=str, default='NOISE',
                         help='Noisify or remove noisy data.',
-                        choices=MODE)
+                        choices=MODE
+                       )
+    
+    # add argument for noise type
     parser.add_argument('-n', '--noise', type=str, default='ALL',
                         help='Synthetic noise type.',
-                        choices=NOISE)
+                        choices=NOISE
+                       )
+    
+    # parse the program input arguments
     args = parser.parse_args()
 
+    # return the parsed dictionary
     return args
 
-# utility to correct path to the OS
-def gen_os_path(data, sub_dir):
-    if os.name == 'nt':
-        return data + sub_dir + '\\'
-    else:
-        return data + sub_dir + '/'
-
-# helper function for multiprocessing
-def noise_helper(person_data, write_loc, camera_flag = True, environment_flag = True):
+def noise_helper(im_dir, write_loc, camera_flag = True, environment_flag = True):
+    """
+    The noise_helper function breaks out the directory noise-augmentation logic for multiprocessin.
+    
+    :param im_dir: the directory of the where the data is
+    :type im_dir: string
+    
+    :param write_loc: the path where the images should be written
+    :type write_loc: string
+    
+    :param camera_flag: flag whether camera noises are to be used
+    :type camera_flag: boolean
+    
+    :param environment_flag: flag whether environment noises are to be used
+    :type environment_flag: boolean
+    """
     
     features = {}
-    im_dirs = ['Live',  'Paper_Mask', 'Covid_Mask', 'Display_Replay', 'Spandex_Mask']
-    im_dirs += ['Live_exterior',  'Paper_Mask_exterior', 'Covid_Mask_exterior', 'Display_Replay_exterior', 'Spandex_Mask_exterior']
 
     # camera noises
     sensor_noises = [blur, gaussian, poisson, salt_and_pepper]
@@ -64,55 +123,71 @@ def noise_helper(person_data, write_loc, camera_flag = True, environment_flag = 
     if camera_flag: noises += sensor_noises + exposures
     if environment_flag: noises += environments
 
-    # original annotated data
-    for im_dir in im_dirs:
+    # setup the directory read and write paths
+    loc_dir = os.path.join(person_data, im_dir)
+    write_dir = os.path.join(write_loc, im_dir)
+
+    # verify we have data first
+    if os.path.isdir(loc_dir):
+
+        # make the participant write directory if does not exist
+        if not os.path.exists(write_dir):
+            os.makedirs(write_dir)
+
+        # make the noise write subdirectory if does not exist
+        for noisify in noises:
+            if not os.path.exists(os.path.join(write_dir, noisify.__name__)):
+                os.makedirs(os.path.join(write_dir, noisify.__name__))        
+
+        # set the local directory
+        os.chdir(loc_dir)
         
-        loc_dir = gen_os_path(person_data, im_dir)
-        write_dir = gen_os_path(write_loc, im_dir)
+        # get the images
+        images = glob("*.png")
+        print('Noisifying', loc_dir, len(images))
+        
+        # iterate through images and noisify them
+        for im in images:       
+            
+            # read in the image
+            im_path = os.path.join(loc_dir, im)
+            image = Image.open(im_path, 'r')
+            
+            # apply the noise-augmentation function
+            noisify = random.choice(['none']+noises)
 
-        # verify we have data first
-        if os.path.isdir(loc_dir):
+            # encofrce there is at least one valie noise
+            if noisify != 'none':
 
-            # make the participant write directory if does not exist
-            if not os.path.exists(write_dir):
-                os.makedirs(write_dir)
-
-            # make the noise write subdirectory if does not exist
-            for noisify in noises:
-                if not os.path.exists(gen_os_path(write_dir, noisify.__name__)):
-                    os.makedirs(gen_os_path(write_dir, noisify.__name__))        
-
-            # set the local directory
-            os.chdir(loc_dir)
-
-            images = glob("*.png")
-            print('Noisifying', loc_dir, len(images))
-            # iterate through images and noisify them
-            for im in images:       
-                im_path = loc_dir+ im
-                image = Image.open(im_path, 'r')
+                # environmental noises are CV operations
+                if noisify in environments:
+                    image = np.asarray(image)
                 
-                noisify = random.choice(['none']+noises)
+                # apply the noise augmentation
+                im_noisy = noisify(image)
+                
+                # write the image
+                im_name = im.split(".")
+                noise_image_write(im_noisy, gen_os_path(write_dir, noisify.__name__), im_name[0], noisify)
 
-                # if we are going to noisy the data
-                if noisify != 'none':
 
-                    # environmental noises are CV operations
-                    if noisify in environments:
-                        image = np.asarray(image)
-
-                    im_noisy = noisify(image)
-                    im_name = im.split(".")
-                    noise_image_write(im_noisy, gen_os_path(write_dir, noisify.__name__), im_name[0], noisify)
-                '''
-
-                for noisify in noises:
-                    im_noisy = noisify(image)
-                    noise_image_write(im_noisy, gen_os_path(write_dir, noisify.__name__), im, noisify)
-                '''
-
-# extract the features and write them to a json file for re-use
 def noisify_data(data_root, write_root = '', camera_flag = True, environment_flag = True):
+    """
+    The noisify_data function parses through the data and calls the helper to do multi-processing augmentation.
+    NOTE: MUST EDIT THIS TO MATCH YOUR DATASET STRUCTURE.
+        
+    :param data_root: the path to the dataset root
+    :type data_root: string
+    
+    :param write_root: the path where the noise-augmented dataset should be written
+    :type write_root: string
+    
+    :param camera_flag: flag whether camera noises are to be used
+    :type camera_flag: boolean
+    
+    :param environment_flag: flag whether environment noises are to be used
+    :type environment_flag: boolean
+    """
         
     # set the local database root
     proj_root = os.getcwd()
@@ -133,16 +208,19 @@ def noisify_data(data_root, write_root = '', camera_flag = True, environment_fla
         if not os.path.exists(write_root):
             os.makedirs(write_root)
 
+    # setup the multiprocessing pool
     pool = mp.Pool(mp.cpu_count())
-    #random.shuffle(directories)
+
+    # iterate through the directories
+    # NOTE: YOU MAY NEED TO ADJUST THIS TO YOUR DATASET
     for num, person in enumerate(directories):
-
-        person_data = data_root+person
-        write_loc = write_root+person
-        #feature_helper(person_data, feature_fn)
+        
+        # generate the local paths
+        person_data = os.path.join(data_root, person)
+        write_loc = os.path.join(write_root, person)
         pool.apply_async(noise_helper, args=(person_data, write_loc, camera_flag, environment_flag))
-        #noise_helper(person_data, write_loc, camera_flag, environment_flag)
-
+    
+    # close the pool
     pool.close()
     pool.join()
             
