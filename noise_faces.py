@@ -60,7 +60,6 @@ def image_write(noise_im, im_dir, im_name, noise, counter = -1):
 
 
 def parse_args():
-    
     """
     The parse_args function parses the program inputs. This determines whether to noise or remove images as well as what noise type.
     
@@ -187,8 +186,13 @@ def noisify_data(data_root, write_root = '', camera_flag = True, environment_fla
     
     :param environment_flag: flag whether environment noises are to be used
     :type environment_flag: boolean
+    
+    :raises ValueError: asserts data path exists
     """
         
+    # verify the directory exists
+    assert(os.path.exists(data))
+    
     # set the local database root
     proj_root = os.getcwd()
 
@@ -227,8 +231,16 @@ def noisify_data(data_root, write_root = '', camera_flag = True, environment_fla
     # reset the root directory
     os.chdir(proj_root)
 
-# delete the noisy data for fresh generation
 def reset_noises(write_root):
+    """
+    The reset_noises function deletes the noisy data. This is useful if using generic data loaders that do not have knowledge of clean vs noisy data.
+    NOTE: MUST EDIT THIS TO MATCH YOUR DATASET STRUCTURE.
+    
+    :param write_root: the path where the noise-augmented dataset is stored
+    :type write_root: string
+    
+    :raises ValueError: asserts write_root path exists
+    """
         
     # set the local database root
     proj_root = os.getcwd()
@@ -240,9 +252,6 @@ def reset_noises(write_root):
     directories = glob("*/")
     directories = sorted(directories)
 
-    # liveliness directories
-    im_dirs = ['Live',  'Paper_Mask', 'Covid_Mask', 'Display_Replay', 'Spandex_Mask']
-
     # noise directories
     camera_noises = [blur, gaussian, poisson, salt_and_pepper]
     exposures = [under_expose, over_expose]
@@ -250,20 +259,20 @@ def reset_noises(write_root):
 
     # iterate through the participants
     for num, person in enumerate(directories):
+        
+        # generate the write directory path
+        write_dir = os.path.join(write_root,person)
+        print('Removing data:', write_dir)
 
-        write_loc = write_root+person
-        print('Removing data:', write_loc)
-
-        # go through the liveliness directories
-        for im_dir in im_dirs:
+        # delete the noise subdirectories
+        for noisify in noises:
             
-            write_dir = gen_os_path(write_loc, im_dir)
-
-            # delete the noise subdirectories
-            for noisify in noises:
-                delete_dir = gen_os_path(write_dir, noisify.__name__)
-                if os.path.exists(delete_dir):
-                    shutil.rmtree(delete_dir)
+            # generate the noise-subdirectory
+            delete_dir = gen_os_path(write_dir, noisify.__name__)
+            
+            # delete if exists
+            if os.path.exists(delete_dir):
+                shutil.rmtree(delete_dir)
 
         
     # reset the root directory
@@ -272,14 +281,10 @@ def reset_noises(write_root):
                         
 if __name__ == "__main__":
 
-    # determine the data path
-    if os.name == 'nt':
-        data = 'G:\\Anti-Spoof-Crops\\'
-        write_data = 'G:\\Anti-Spoof-Crops-Noisy\\'
-        print('Windows paths')
-    else:
-        data = '/media/ali/New Volume/Anti-Spoof-Crops/'
-        print('Linux paths')
+    # absolute paths to where the data is stored
+    # NOTE: MUST UPDATE THIS TO MATCH YOUR DATASET
+    data = '/path/to/stored_data/'
+    write_data = '/path/to/stored_data/'
 
     # get the arguments
     args = parse_args()
@@ -294,8 +299,11 @@ if __name__ == "__main__":
     elif args.noise == 'ENV':
             camera_flag = False
             environment_flag = True
-
-    if args.mode == 'NOISE':
+    
+    # if mode is noise-augmentation, call the noisify function
+    if args.mode == 'NOISE':        
         noisify_data(data, write_data, camera_flag, environment_flag)
+        
+    # if mode is removal, call the reset function
     elif args.mode == 'RM':
         reset_noises(write_data)
