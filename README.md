@@ -25,3 +25,6 @@ The following environmental noises are implimented:
   * streak_shadow - below horizon source (e.g., sun) illuminates streak over bottom of image
   * pipe_source - adjacent source (e.g., sun) illuminates pipe across middle of image
   * pipe_shadow - adjacent source (e.g., sun) is obstructed and casts shadow across middle of image
+  
+### Implimenting Noise Augmentations
+The noise functions can be directly implimented by simply importing the functions into your data loader. Alternatively, a helper function is provided in the noise_faces.py file. This file provides scripts to both add noise (using multiprocessing for speed) or remove the images. Note, you will need to verify the parser matches your repository structure.
