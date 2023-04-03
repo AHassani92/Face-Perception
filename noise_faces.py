@@ -15,7 +15,7 @@ import cv2 as cv
 from PIL import Image, ImageOps
 
 # noise generators
-from noise_generators_camera import blur, gaussian, poisson, salt_and_pepper, under_expose, over_expose
+from noise_generators_camera import poor_focus, dark_noise, shot_noise, salt_and_pepper, under_expose, over_expose
 from noise_generators_environment import point_source, point_shadow, streak_source, streak_shadow, pipe_source, pipe_shadow
 
 
