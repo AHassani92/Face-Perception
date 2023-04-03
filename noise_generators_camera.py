@@ -19,9 +19,9 @@ import skimage
 from PIL import Image, ImageOps
 from skimage import feature
 
-def blur(image, sigma = None, IR = True):
+def poor_focus(image, sigma = None, IR = True):
     """
-    The blur function adds a randomized amount of blur to the image.
+    The poor_focus function adds a randomized amount of blur to the image.
     By default, it uses a kernel intensity ranging between 3 and 5 but can be specified.
     
     :param image: the image to be noise-augmented
@@ -48,9 +48,9 @@ def blur(image, sigma = None, IR = True):
     # return the noisy image
     return image_noise
 
-def gaussian(image, var = None, IR = True, cv_image = False):
+def dark_noise(image, var = None, IR = True, cv_image = False):
     """
-    The gaussian function represents dark-noise or photo-receptor leakage. This is done with adding randomized gaussian noise.
+    The dark_noise function represents dark-noise or photo-receptor leakage. This is done with adding randomized gaussian noise.
     By default, it assumes a variance between .01 * 1 and .01 * 3 or can be specified.
     Note this function needs PIL format to work properly; flags are used to convert from numpy as necessary.
     
@@ -97,9 +97,9 @@ def gaussian(image, var = None, IR = True, cv_image = False):
     return image_noise
 
 
-def poisson(image, gauss = None, IR = True, cv_image = False):
+def shot_noise(image, gauss = None, IR = True, cv_image = False):
     """
-    The poisson function represents shot-noise or irregular photon distributione. This is done with adding poisson noise.
+    The shot_noise function represents shot-noise or irregular photon distributione. This is done with adding poisson noise.
     Note this function needs PIL format to work properly; flags are used to convert from numpy as necessary.
     
     :param image: the image to be noise-augmented
