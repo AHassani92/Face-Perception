@@ -19,7 +19,7 @@ from PIL import Image, ImageOps
 from skimage import feature
 
 # helper generators
-from noise_generators_camera import blur, gaussian, poisson, salt_and_pepper, under_expose, over_expose
+from noise_generators_camera import poor_focus, dark_noise, shot_noise, salt_and_pepper, under_expose, over_expose
 
 def point_source(image, scale = None, IR = True):
     """
@@ -75,9 +75,9 @@ def point_source(image, scale = None, IR = True):
     background = cv.bitwise_not(mask_blend)
 
     # apply the exposure effects to the image
-    blend = blur(over_expose(image, environment_flag = True), 2)
+    blend = poor_focus(over_expose(image, environment_flag = True), 2)
     img_over =  over_expose(image, environment_flag = True)
-    img_under =  gaussian(under_expose(image, environment_flag = True), var = .001, cv_image = True, IR = IR)
+    img_under =  dark_noise(under_expose(image, environment_flag = True), var = .001, cv_image = True, IR = IR)
     
     # mask the effects appropriately
     blend = cv.bitwise_and(blend, mask)
@@ -144,9 +144,9 @@ def point_shadow(image, scale = None, randomize = True, IR = True):
     background = cv.bitwise_not(mask_blend)
 
     # apply the exposure effects to the image
-    blend = blur(under_expose(image, environment_flag = True), 2)
-    img_over =  poisson(over_expose(image, environment_flag = True), cv_image = True, IR = IR)
-    img_under =  gaussian(under_expose(image, environment_flag = True), var = .01, cv_image = True, IR = IR)
+    blend = poor_focus(under_expose(image, environment_flag = True), 2)
+    img_over =  shot_noise(over_expose(image, environment_flag = True), cv_image = True, IR = IR)
+    img_under =  dark_noise(under_expose(image, environment_flag = True), var = .01, cv_image = True, IR = IR)
    
     # mask the effects appropriately
     blend = cv.bitwise_and(blend, mask)
@@ -220,9 +220,9 @@ def streak_source(image, streak_angle = None, IR = True):
     background = cv.bitwise_not(cv.bitwise_or(mask, mask_blend))
     
     # apply the exposure effects to the image
-    img_blur = blur(over_expose(image, environment_flag = True), 2)
+    img_blur = poor_focus(over_expose(image, environment_flag = True), 2)
     img_over =  over_expose(image, environment_flag = True)
-    img_under =  gaussian(under_expose(image, environment_flag = True), var = .001, cv_image = True, IR = IR)
+    img_under =  dark_noise(under_expose(image, environment_flag = True), var = .001, cv_image = True, IR = IR)
     
     # mask the effects appropriately
     blend = cv.bitwise_and(img_blur, blend)
@@ -292,9 +292,9 @@ def streak_shadow(image, streak_angle = None, IR = True):
     background = cv.bitwise_not(cv.bitwise_or(mask, mask_blend))
         
     # apply the exposure effects to the image
-    img_blur = blur(under_expose(image, environment_flag = True), 2)
-    img_over =  poisson(over_expose(image, environment_flag = True), cv_image = True, IR = IR)
-    img_under =  gaussian(under_expose(image, environment_flag = True), var = .01, cv_image = True, IR = IR)
+    img_blur = poor_focus(under_expose(image, environment_flag = True), 2)
+    img_over =  shot_noise(over_expose(image, environment_flag = True), cv_image = True, IR = IR)
+    img_under =  dark_noise(under_expose(image, environment_flag = True), var = .01, cv_image = True, IR = IR)
 
     # mask the effects appropriately
     blend = cv.bitwise_and(img_blur, blend)
@@ -385,9 +385,9 @@ def pipe_source(image, pipe_angle = None, IR = True):
     background = cv.bitwise_not(total)
     
     # apply the exposure effects to the image
-    img_blur = blur(over_expose(image, environment_flag = True), 2)
+    img_blur = poor_focus(over_expose(image, environment_flag = True), 2)
     img_over =  over_expose(image, environment_flag = True)
-    img_under =  gaussian(under_expose(image, environment_flag = True), var = .001, cv_image = True, IR = IR)
+    img_under =  dark_noise(under_expose(image, environment_flag = True), var = .001, cv_image = True, IR = IR)
 
     # mask the effects appropriately
     blend_top = cv.bitwise_and(img_blur, blend_top)
@@ -481,9 +481,9 @@ def pipe_shadow(image, randomize = True, IR = True):
     background = cv.bitwise_not(total)
     
     # apply the exposure effects to the image
-    img_blur = blur(under_expose(image, environment_flag = True), 2)
-    img_over =  poisson(over_expose(image, environment_flag = True), cv_image = True, IR = IR)
-    img_under =  gaussian(under_expose(image, environment_flag = True), var = .01, cv_image = True, IR = IR)
+    img_blur = poor_focus(under_expose(image, environment_flag = True), 2)
+    img_over =  shot_noise(over_expose(image, environment_flag = True), cv_image = True, IR = IR)
+    img_under =  dark_noise(under_expose(image, environment_flag = True), var = .01, cv_image = True, IR = IR)
 
     # mask the effects appropriately
     blend_top = cv.bitwise_and(img_blur, blend_top)
